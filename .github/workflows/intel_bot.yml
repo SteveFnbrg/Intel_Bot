@@ -21,6 +21,7 @@ jobs:
         
       - name: Run Bot
         env:
+          PYTHONUNBUFFERED: "1" # Add this line
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python main.py

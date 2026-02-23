@@ -48,10 +48,10 @@ def send_intel_email(body):
     msg.set_content(body)
     msg['Subject'] = f"GE Aero Strategy Brief: Hybrid-Electric Intel"
     msg['From'] = "your-intel-bot@gmail.com"
-    msg['To'] = "strategy-team@geaerospace.com" # Your key contacts
+    msg['To'] = "sfeinberg@gmail.com" # Your key contacts
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login("your-email@gmail.com", os.getenv("EMAIL_PASSWORD"))
+        smtp.login("sfeinberg@gmail.com", os.getenv("EMAIL_PASSWORD"))
         smtp.send_message(msg)
 
 if __name__ == "__main__":

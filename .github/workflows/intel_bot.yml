@@ -1,0 +1,26 @@
+name: Weekly Aero Intel
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Automates it for 9:00 AM every Monday
+  workflow_dispatch:   # Adds a "Run now" button for testing
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: pip install feedparser openai
+        
+      - name: Run Bot
+        env:
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python main.py

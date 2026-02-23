@@ -2,100 +2,112 @@ import feedparser
 import smtplib
 import os
 import openai
+from datetime import datetime, timedelta
 from email.message import EmailMessage
 
-# --- EXPANDED STRATEGIC CONFIGURATION ---
+# --- EXECUTIVE STRATEGIC CONFIGURATION ---
 RSS_FEEDS = [
     "https://aviationweek.com/awn-rss/feed",
     "https://www.flightglobal.com/news/rss",
     "https://evtol.com/feed/",
     "https://www.hydrogeninsight.com/rss",
-    "https://electrek.co/category/batteries/feed/" # Added for Tech Triggers
+    "https://electrek.co/category/batteries/feed/"
 ]
 
-# Strategic Keywords from the Three Games Framework
+# Keywords derived from your "Three Games" Strategic Assessment
 KEYWORDS = [
-    # Game 1: AAM
-    "BETA Technologies", "Joby Aviation", "Archer Aviation", "Wisk", "Electra.aero", "eVTOL", "Part 23",
-    # Game 2: Regional
-    "Heart Aerospace", "ZeroAvia", "Ampaire", "ES-30", "Pratt & Whitney", "Safran", "Embraer", "ATR", "Dash 8",
-    # Game 3: Narrowbody & Tech Triggers
-    "RISE", "Airbus ZEROe", "Rolls-Royce", "open-fan", "hydrogen fuel cell", "solid-state", "SiC", "Wh/kg", "2MW",
-    # China Strategy
-    "CATL", "BYD", "EHang", "AutoFlight", "CAAC"
+    "BETA Technologies", "Joby", "Archer Aviation", "Wisk", "Electra.aero",  # Game 1
+    "Heart Aerospace", "ZeroAvia", "Ampaire", "ES-30", "Embraer", "Safran", # Game 2
+    "Airbus ZEROe", "Rolls-Royce", "solid-state", "SiC", "Wh/kg", "2MW",     # Game 3
+    "CATL", "BYD", "EHang", "AutoFlight", "CAAC"                            # China
 ]
 
-# External VIP Assets (From your LinkedIn)
+# External VIP Assets (From your LinkedIn) - Only External
 EXTERNAL_VIPS = {
     "Electra.aero": "Marc Allen (CEO)",
     "BETA Technologies": "Ryan Barta (Strategy)",
-    "Wisk": "Dan Dalton (VP) / Daniela Schaff",
+    "Wisk": "Dan Dalton (VP)",
     "ZeroAvia": "Julieta Diederichsen (Dir. Biz Dev)",
-    "Boeing": "Jim Hileman (VP Sustainability)",
     "United": "Lauren Riley (CSO)",
-    "Embraer": "Daniel Moczydlower (CEO, Embraer-X)",
+    "Boeing": "Jim Hileman (VP Sustainability)",
     "Safran": "Peter Detjen (VP Innovation)"
 }
 
-EMAIL_ADDRESS = "sfeinberg@gmail.com" 
-RECIPIENTS = ["sfeinberg@gmail.com"]
-
-def get_intelligence():
-    print("Scraping external aviation and battery feeds...")
+def get_30_day_intel():
+    print("Scraping for 30-day signal...")
+    thirty_days_ago = datetime.now() - timedelta(days=30)
     collected_news = ""
+    
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:25]:
-            # Filter by Strategic Keywords
+        for entry in feed.entries:
+            # Date Check
+            dt = datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else None
+            if dt and dt < thirty_days_ago:
+                continue
+            
+            # Keyword/Signal Check
             if any(key.lower() in entry.title.lower() for key in KEYWORDS):
                 # Check for External HUMINT Triggers
-                humint_alert = ""
+                humint = ""
                 for entity, contact in EXTERNAL_VIPS.items():
                     if entity.lower() in entry.title.lower():
-                        humint_alert = f"📍 HUMINT ALERT: News regarding {entity}. Reach out to {contact} for external ground truth.\n"
+                        humint = f"[EXTERNAL HUMINT: Reach out to {contact}] "
                 
-                collected_news += f"{humint_alert}TITLE: {entry.title}\nLINK: {entry.link}\nSUMMARY: {entry.summary[:250]}...\n\n"
+                collected_news += f"{humint}Source: {entry.title} ({dt.strftime('%b %d')})\nLink: {entry.link}\n\n"
+    
     return collected_news
 
-def summarize_with_ai(raw_text):
-    print("Generating Synthesis via 'Three Games' Framework...")
+def summarize_ruthlessly(raw_text):
+    print("Synthesizing Signal...")
     client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    
+    # This prompt is the 'Executive Filter'
     prompt = f"""
-    You are the Strategic Intelligence Lead at GE Aerospace. 
-    Review the following external news and summarize for leadership using the Three Games framework:
-    - GAME 1 (AAM): Focus on certification (BETA/Joby/Wisk) and Part 23/135 updates.
-    - GAME 2 (Regional): Identify any moves by Pratt/Safran/Embraer to lock out GE.
-    - GAME 3 (Narrowbody/RISE): Focus on battery breakthroughs (Wh/kg) and Airbus ZEROe.
-    - CHINA WATCH: Any evidence of CATL/BYD hitting 500 Wh/kg or EHang scaling.
+    You are the Lead Strategic Intelligence Analyst for GE Aerospace. 
+    Review the news items from the last 30 days and provide a high-signal briefing.
+    
+    CRITICAL RULES:
+    1. ZERO FLUFF: Do not use phrases like "There were no updates regarding..."
+    2. OMIT EMPTY SECTIONS: If a 'Game' has no news, skip that section entirely.
+    3. SO WHAT: Focus on how this impacts the 'Three Games' roadmap.
+    4. HUMINT: If an external connection is mentioned, highlight the 'Ground Truth' opportunity.
+
+    STRUCTURE:
+    - **Executive Summary** (Top 3 impacts only)
+    - **Strategic Shifts** (Organize by Game 1, 2, or 3 ONLY if there is news)
+    - **China Watch** (Only if technical/regulatory signal exists)
 
     DATA:
     {raw_text}
     """
+    
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
 
-def send_intel_report(content):
+def send_intel(content):
     msg = EmailMessage()
-    msg['Subject'] = f"EXTERNAL INTEL: Three Games Strategic Brief"
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = ", ".join(RECIPIENTS)
+    msg['Subject'] = f"SIGNAL: Strategic Intel Brief ({datetime.now().strftime('%b %d')})"
+    msg['From'] = "your-email@gmail.com"
+    msg['To'] = "your-email@gmail.com"
     msg.set_content(content)
+    
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_ADDRESS, os.environ.get("EMAIL_PASSWORD"))
+            smtp.login("your-email@gmail.com", os.environ.get("EMAIL_PASSWORD"))
             smtp.send_message(msg)
-            print("Intelligence Report Sent.")
+            print("Executive Briefing Sent.")
     except Exception as e:
         print(f"Error: {e}")
 
 if __name__ == "__main__":
-    news = get_intelligence()
-    if news:
-        # Use AI summary if key is available, else send raw
-        final_report = summarize_with_ai(news) if os.environ.get("OPENAI_API_KEY") else news
-        send_intel_report(final_report)
+    signal = get_30_day_intel()
+    if signal:
+        briefing = summarize_ruthlessly(signal) if os.environ.get("OPENAI_API_KEY") else signal
+        send_intel(briefing)
     else:
-        print("No strategic external signals found.")
+        # Instead of a full email, just log that it was a quiet week
+        print("Zero signal detected in the last 30 days. No email sent.")

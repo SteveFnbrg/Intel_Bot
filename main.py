@@ -6,12 +6,12 @@ def send_test_email():
     # 1. Setup the message
     msg = EmailMessage()
     msg['Subject'] = "Aero-Bot Pulse Check"
-    msg['From'] = "your-email@gmail.com" # Replace with your email
-    msg['To'] = "your-email@gmail.com"   # Send it to yourself
+    msg['From'] = "sfeinberg@gmail.com" # Replace with your email
+    msg['To'] = "sfeinberg@gmail.com"   # Send it to yourself
     msg.set_content("The connection is live. If you are reading this, your GitHub Secrets and App Password are set up correctly.")
 
     # 2. Extract Secrets
-    email_user = "your-email@gmail.com" # Replace with your email
+    email_user = "sfeinberg@gmail.com" # Replace with your email
     email_pass = os.environ.get("EMAIL_PASSWORD")
 
     print(f"Attempting login for: {email_user}")

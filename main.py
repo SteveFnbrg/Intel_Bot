@@ -47,9 +47,8 @@ def send_intel_email(body):
     msg = EmailMessage()
     msg.set_content(body)
     msg['Subject'] = f"GE Aero Strategy Brief: Hybrid-Electric Intel"
-    msg['From'] = "your-intel-bot@gmail.com"
-    msg['To'] = "sfeinberg@gmail.com" # Your key contacts
-
+    msg['From'] = "sfeinberg@gmail.com"
+    msg['To'] = "sfeinberg@gmail.com" 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
         smtp.login("sfeinberg@gmail.com", os.getenv("EMAIL_PASSWORD"))
         smtp.send_message(msg)

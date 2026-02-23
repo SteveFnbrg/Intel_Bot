@@ -4,83 +4,98 @@ import os
 import openai
 from email.message import EmailMessage
 
-# --- CONFIGURATION ---
+# --- EXPANDED STRATEGIC CONFIGURATION ---
 RSS_FEEDS = [
     "https://aviationweek.com/awn-rss/feed",
     "https://www.flightglobal.com/news/rss",
     "https://evtol.com/feed/",
-    "https://simpleflying.com/feed/"
+    "https://www.hydrogeninsight.com/rss",
+    "https://electrek.co/category/batteries/feed/" # Added for Tech Triggers
 ]
 
-KEYWORDS = ["hybrid", "electric", "AAM", "eVTOL", "battery", "China", "RISE", "EPFD", "narrowbody", "hydrogen"]
+# Strategic Keywords from the Three Games Framework
+KEYWORDS = [
+    # Game 1: AAM
+    "BETA Technologies", "Joby Aviation", "Archer Aviation", "Wisk", "Electra.aero", "eVTOL", "Part 23",
+    # Game 2: Regional
+    "Heart Aerospace", "ZeroAvia", "Ampaire", "ES-30", "Pratt & Whitney", "Safran", "Embraer", "ATR", "Dash 8",
+    # Game 3: Narrowbody & Tech Triggers
+    "RISE", "Airbus ZEROe", "Rolls-Royce", "open-fan", "hydrogen fuel cell", "solid-state", "SiC", "Wh/kg", "2MW",
+    # China Strategy
+    "CATL", "BYD", "EHang", "AutoFlight", "CAAC"
+]
 
-# Update these to match your working test
+# External VIP Assets (From your LinkedIn)
+EXTERNAL_VIPS = {
+    "Electra.aero": "Marc Allen (CEO)",
+    "BETA Technologies": "Ryan Barta (Strategy)",
+    "Wisk": "Dan Dalton (VP) / Daniela Schaff",
+    "ZeroAvia": "Julieta Diederichsen (Dir. Biz Dev)",
+    "Boeing": "Jim Hileman (VP Sustainability)",
+    "United": "Lauren Riley (CSO)",
+    "Embraer": "Daniel Moczydlower (CEO, Embraer-X)",
+    "Safran": "Peter Detjen (VP Innovation)"
+}
+
 EMAIL_ADDRESS = "sfeinberg@gmail.com" 
-RECIPIENTS = "sfeinberg@gmail.com" 
+RECIPIENTS = ["sfeinberg@gmail.com"]
 
 def get_intelligence():
-    print("Scraping aviation feeds...")
+    print("Scraping external aviation and battery feeds...")
     collected_news = ""
     for url in RSS_FEEDS:
         feed = feedparser.parse(url)
-        for entry in feed.entries[:15]:
-            # Only keep news that matches your strategic keywords
+        for entry in feed.entries[:25]:
+            # Filter by Strategic Keywords
             if any(key.lower() in entry.title.lower() for key in KEYWORDS):
-                collected_news += f"SOURCE: {entry.title}\nLINK: {entry.link}\nSUMMARY: {entry.summary[:300]}\n\n"
+                # Check for External HUMINT Triggers
+                humint_alert = ""
+                for entity, contact in EXTERNAL_VIPS.items():
+                    if entity.lower() in entry.title.lower():
+                        humint_alert = f"📍 HUMINT ALERT: News regarding {entity}. Reach out to {contact} for external ground truth.\n"
+                
+                collected_news += f"{humint_alert}TITLE: {entry.title}\nLINK: {entry.link}\nSUMMARY: {entry.summary[:250]}...\n\n"
     return collected_news
 
 def summarize_with_ai(raw_text):
-    print("Generating Strategic Synthesis via OpenAI...")
+    print("Generating Synthesis via 'Three Games' Framework...")
     client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    
     prompt = f"""
-    You are a Lead Strategic Intelligence Analyst for GE Aerospace. 
-    Review the following aviation news and write a concise, executive-level briefing.
-    Focus on implications for GE's 2030 roadmap (RISE, hybrid-electric, narrowbody dominance).
-    
-    STRUCTURE:
-    1. EXECUTIVE SIGNAL (The 'So What?' of the week)
-    2. AAM & eVTOL VELOCITY (Focus on certification and China developments)
-    3. PROPULSION & ENERGY (Battery, Hydrogen, and Thermal Mgmt breakthroughs)
-    4. COMPETITIVE LANDSCAPE (Startups, funding, and partnership moves)
+    You are the Strategic Intelligence Lead at GE Aerospace. 
+    Review the following external news and summarize for leadership using the Three Games framework:
+    - GAME 1 (AAM): Focus on certification (BETA/Joby/Wisk) and Part 23/135 updates.
+    - GAME 2 (Regional): Identify any moves by Pratt/Safran/Embraer to lock out GE.
+    - GAME 3 (Narrowbody/RISE): Focus on battery breakthroughs (Wh/kg) and Airbus ZEROe.
+    - CHINA WATCH: Any evidence of CATL/BYD hitting 500 Wh/kg or EHang scaling.
 
     DATA:
     {raw_text}
     """
-    
     response = client.chat.completions.create(
-        model="gpt-4o", # Or "gpt-4-turbo"
+        model="gpt-4o",
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content
 
-def send_final_email(content):
+def send_intel_report(content):
     msg = EmailMessage()
-    msg['Subject'] = "WEEKLY INTEL: Hybrid-Electric & AAM Strategy"
+    msg['Subject'] = f"EXTERNAL INTEL: Three Games Strategic Brief"
     msg['From'] = EMAIL_ADDRESS
     msg['To'] = ", ".join(RECIPIENTS)
     msg.set_content(content)
-
-    email_pass = os.environ.get("EMAIL_PASSWORD")
-
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(EMAIL_ADDRESS, email_pass)
+            smtp.login(EMAIL_ADDRESS, os.environ.get("EMAIL_PASSWORD"))
             smtp.send_message(msg)
-            print("Executive Intel Report Sent!")
+            print("Intelligence Report Sent.")
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
-    raw_data = get_intelligence()
-    
-    if raw_data:
-        # If you have OpenAI API key set up, use this:
-        if os.environ.get("OPENAI_API_KEY"):
-            final_report = summarize_with_ai(raw_data)
-        else:
-            final_report = "--- RAW INTEL REPORT ---\n\n" + raw_data
-        
-        send_final_email(final_report)
+    news = get_intelligence()
+    if news:
+        # Use AI summary if key is available, else send raw
+        final_report = summarize_with_ai(news) if os.environ.get("OPENAI_API_KEY") else news
+        send_intel_report(final_report)
     else:
-        print("No strategic news found this week. Skipping email.")
+        print("No strategic external signals found.")
